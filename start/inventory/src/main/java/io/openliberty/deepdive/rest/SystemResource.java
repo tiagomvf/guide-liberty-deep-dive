@@ -2,8 +2,6 @@ package io.openliberty.deepdive.rest;
 
 import java.util.List;
 
-import org.eclipse.microprofile.config.inject.ConfigProperties;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -14,9 +12,12 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.openliberty.deepdive.rest.model.SystemData;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -26,12 +27,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.core.UriInfo;
-import jakarta.xml.ws.RespectBinding;
 
 @ApplicationScoped
 @Path("/systems")
@@ -43,6 +40,7 @@ public class SystemResource {
     @Inject
     @ConfigProperty(name = "client.https.port")
     String CLIENT_PORT;
+
 
     @GET
     @Path("/")
@@ -67,14 +65,16 @@ public class SystemResource {
     @Operation(
         summary = "Get System",
         description = "Retrieves and returns the system data from the system "
-                      + "service running on the particular host.",
-        operationId = "getSystem")
+            + "service running on the particular host.",
+        operationId = "getSystem"
+    )
     public SystemData getSystem(
         @Parameter(
             name = "hostname", in = ParameterIn.PATH,
             description = "The hostname of the system",
             required = true, example = "localhost",
-            schema = @Schema(type = SchemaType.STRING))
+            schema = @Schema(type = SchemaType.STRING)
+        )
         @PathParam("hostname") String hostname) {
         return inventory.getSystem(hostname);
     }
@@ -82,6 +82,7 @@ public class SystemResource {
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully added system to inventory"),
@@ -119,15 +120,13 @@ public class SystemResource {
         @QueryParam("hostname") String hostname,
         @QueryParam("osName") String osName,
         @QueryParam("javaVersion") String javaVersion,
-        @QueryParam("heapSize") Long heapSize,
-        @Context UriInfo info) {
+        @QueryParam("heapSize") Long heapSize) {
 
         SystemData s = inventory.getSystem(hostname);
         if (s != null) {
             return fail(hostname + " already exists.");
         }
         inventory.add(hostname, osName, javaVersion, heapSize);
-
         return success(hostname + " was added.");
     }
 
@@ -135,6 +134,7 @@ public class SystemResource {
     @Path("/{hostname}")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully updated system"),
@@ -189,6 +189,7 @@ public class SystemResource {
     @DELETE
     @Path("/{hostname}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully deleted the system from inventory"),
@@ -221,6 +222,7 @@ public class SystemResource {
     @Path("/client/{hostname}")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully added system client"),
@@ -241,7 +243,6 @@ public class SystemResource {
     public Response addSystemClient(@PathParam("hostname") String hostname) {
         System.out.println(CLIENT_PORT);
         return success("Client Port: " + CLIENT_PORT);
-        // return fail("This api is not implemented yet.");
     }
 
     private Response success(String message) {
@@ -250,7 +251,7 @@ public class SystemResource {
 
     private Response fail(String message) {
         return Response.status(Response.Status.BAD_REQUEST)
-                       .entity("{ \"error\" : \"" + message + "\" }")
-                       .build();
+            .entity("{ \"error\" : \"" + message + "\" }")
+            .build();
     }
 }

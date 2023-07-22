@@ -1,18 +1,46 @@
 package io.openliberty.deepdive.rest.model;
 
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-@Schema(name = "SystemData",
-        description = "POJO that represents a single inventory entry.")
-public class SystemData {
+import java.io.Serializable;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+
+@Schema(name = "SystemData",
+    description = "POJO that represents a single inventory entry.")
+@Entity
+@Table(name = "SystemData")
+@NamedQuery(name = "SystemData.findAll", query = "SELECT e FROM SystemData e")
+@NamedQuery(name = "SystemData.findSystem",
+    query = "SELECT e FROM SystemData e WHERE e.hostname = :hostname")
+public class SystemData implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    @SequenceGenerator(name = "SEQ",
+        sequenceName = "systemData_id_seq",
+        allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "SEQ")
+    @Id
+    @Column(name = "id")
     private int id;
 
     @Schema(required = true)
+    @Column(name = "hostname")
     private String hostname;
 
+    @Column(name = "osName")
     private String osName;
+    @Column(name = "javaVersion")
     private String javaVersion;
-    private Long   heapSize;
+    @Column(name = "heapSize")
+    private Long heapSize;
 
     public SystemData() {
     }
@@ -65,10 +93,15 @@ public class SystemData {
     }
 
     @Override
+    public int hashCode() {
+        return hostname.hashCode();
+    }
+
+    @Override
     public boolean equals(Object host) {
-      if (host instanceof SystemData) {
-        return hostname.equals(((SystemData) host).getHostname());
-      }
-      return false;
+        if (host instanceof SystemData) {
+            return hostname.equals(((SystemData) host).getHostname());
+        }
+        return false;
     }
 }
