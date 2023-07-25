@@ -16,6 +16,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.openliberty.deepdive.rest.model.SystemData;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -135,6 +136,7 @@ public class SystemResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+    @RolesAllowed({ "admin", "user" })
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully updated system"),
@@ -190,6 +192,7 @@ public class SystemResource {
     @Path("/{hostname}")
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+    @RolesAllowed({ "admin" })
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully deleted the system from inventory"),
@@ -223,6 +226,7 @@ public class SystemResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+    @RolesAllowed({ "admin" })
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully added system client"),
