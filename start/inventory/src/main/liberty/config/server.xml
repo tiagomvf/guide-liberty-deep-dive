@@ -4,6 +4,7 @@
     <featureManager>
         <feature>jakartaee-10.0</feature>
         <feature>microProfile-6.0</feature>
+        <feature>jwtSso-1.0</feature>
     </featureManager>
 
     <variable name="default.http.port" defaultValue="9080" />
@@ -13,18 +14,22 @@
     <variable name="postgres/portnum" defaultValue="5432" />
 
     <httpEndpoint id="defaultHttpEndpoint"
-                  httpPort="${default.http.port}"
+                  httpPort="${default.http.port}" 
                   httpsPort="${default.https.port}" />
 
     <!-- Automatically expand WAR files and EAR files -->
     <applicationManager autoExpand="true"/>
-
+    
+    <keyStore id="defaultKeyStore" password="secret" />
+    
     <basicRegistry id="basic" realm="WebRealm">
         <user name="bob" password="{xor}PTA9Lyg7" />
         <user name="alice" password="{xor}PjM2PDovKDs=" />
+
         <group name="admin">
             <member name="bob" />
         </group>
+
         <group name="user">
             <member name="bob" />
             <member name="alice" />
@@ -43,6 +48,16 @@
             </security-role>
         </application-bnd>
     </webApplication>
+
+    <jwtSso jwtBuilderRef="jwtInventoryBuilder"/> 
+    <jwtBuilder id="jwtInventoryBuilder" 
+                issuer="http://openliberty.io" 
+                audiences="systemService"
+                expiry="24h"/>
+    <mpJwt audiences="systemService" 
+           groupNameAttribute="groups" 
+           id="myMpJwt" 
+           issuer="http://openliberty.io"/>
 
     <!-- Default SSL configuration enables trust for default certificates from the Java runtime -->
     <ssl id="defaultSSLConfig" trustDefaultCerts="true" />

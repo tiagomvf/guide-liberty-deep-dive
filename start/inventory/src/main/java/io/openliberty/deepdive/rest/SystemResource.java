@@ -1,5 +1,6 @@
 package io.openliberty.deepdive.rest;
 
+import java.net.URI;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -11,12 +12,15 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
-
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.openliberty.deepdive.rest.client.SystemClient;
+import io.openliberty.deepdive.rest.client.UnknownUriExceptionMapper;
 import io.openliberty.deepdive.rest.model.SystemData;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -42,6 +46,8 @@ public class SystemResource {
     @ConfigProperty(name = "client.https.port")
     String CLIENT_PORT;
 
+    @Inject
+    JsonWebToken jwt;
 
     @GET
     @Path("/")
@@ -66,7 +72,7 @@ public class SystemResource {
     @Operation(
         summary = "Get System",
         description = "Retrieves and returns the system data from the system "
-            + "service running on the particular host.",
+                      + "service running on the particular host.",
         operationId = "getSystem"
     )
     public SystemData getSystem(
@@ -141,8 +147,8 @@ public class SystemResource {
         @APIResponse(responseCode = "200",
             description = "Successfully updated system"),
         @APIResponse(responseCode = "400",
-            description =
-                "Unable to update because the system does not exist in the inventory.")
+           description =
+               "Unable to update because the system does not exist in the inventory.")
     })
     @Parameters(value = {
         @Parameter(
@@ -245,8 +251,38 @@ public class SystemResource {
         operationId = "addSystemClient"
     )
     public Response addSystemClient(@PathParam("hostname") String hostname) {
-        System.out.println(CLIENT_PORT);
-        return success("Client Port: " + CLIENT_PORT);
+
+        SystemData s = inventory.getSystem(hostname);
+        if (s != null) {
+            return fail(hostname + " already exists.");
+        }
+
+        SystemClient customRestClient = null;
+        try {
+            customRestClient = getSystemClient(hostname);
+        } catch (Exception e) {
+            return fail("Failed to create the client " + hostname + ".");
+        }
+
+        String authHeader = "Bearer " + jwt.getRawToken();
+        try {
+            String osName = customRestClient.getProperty(authHeader, "os.name");
+            String javaVer = customRestClient.getProperty(authHeader, "java.version");
+            Long heapSize = customRestClient.getHeapSize(authHeader);
+            inventory.add(hostname, osName, javaVer, heapSize);
+        } catch (Exception e) {
+            return fail("Failed to reach the client " + hostname + ".");
+        }
+        return success(hostname + " was added.");
+    }
+
+    private SystemClient getSystemClient(String hostname) throws Exception {
+        String customURIString = "https://" + hostname + ":" + CLIENT_PORT + "/system";
+        URI customURI = URI.create(customURIString);
+        return RestClientBuilder.newBuilder()
+                                .baseUri(customURI)
+                                .register(UnknownUriExceptionMapper.class)
+                                .build(SystemClient.class);
     }
 
     private Response success(String message) {
@@ -255,7 +291,7 @@ public class SystemResource {
 
     private Response fail(String message) {
         return Response.status(Response.Status.BAD_REQUEST)
-            .entity("{ \"error\" : \"" + message + "\" }")
-            .build();
+                       .entity("{ \"error\" : \"" + message + "\" }")
+                       .build();
     }
 }
