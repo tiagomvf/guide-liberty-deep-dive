@@ -36,6 +36,11 @@
         </group>
     </basicRegistry>
 
+    <administrator-role>
+        <user>bob</user>
+        <group>AuthorizedGroup</group>
+    </administrator-role>
+
     <!-- Configures the application on a specified context root -->
     <webApplication contextRoot="${default.context.root}"
                     location="inventory.war">
@@ -75,3 +80,4 @@
                                password="adminpwd"/>
     </dataSource>
 </server>
+

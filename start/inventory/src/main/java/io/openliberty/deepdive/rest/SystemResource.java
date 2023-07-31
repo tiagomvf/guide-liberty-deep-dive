@@ -15,6 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.metrics.annotation.Counted;
 
 import io.openliberty.deepdive.rest.client.SystemClient;
 import io.openliberty.deepdive.rest.client.UnknownUriExceptionMapper;
@@ -90,6 +91,9 @@ public class SystemResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+    @Counted(name = "addSystem",
+             absolute = true,
+             description = "Number of times adding system endpoint is called")
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully added system to inventory"),
@@ -143,6 +147,9 @@ public class SystemResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     @RolesAllowed({ "admin", "user" })
+    @Counted(name = "updateSystem",
+             absolute = true,
+             description = "Number of times updating a system endpoint is called")
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully updated system"),
@@ -199,6 +206,9 @@ public class SystemResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     @RolesAllowed({ "admin" })
+    @Counted(name = "removeSystem",
+             absolute = true,
+             description = "Number of times removing a system endpoint is called")
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully deleted the system from inventory"),
@@ -233,6 +243,9 @@ public class SystemResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     @RolesAllowed({ "admin" })
+    @Counted(name = "addSystemClient",
+             absolute = true,
+             description = "Number of times adding a system by client is called")
     @APIResponses(value = {
         @APIResponse(responseCode = "200",
             description = "Successfully added system client"),
