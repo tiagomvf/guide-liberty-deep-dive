@@ -12,3 +12,4 @@ MANIFEST.MF
 
 # MacOS system files
 .DS_Store
+.idea/
